@@ -42,7 +42,6 @@ func getEnv(key, defaultValue string) string {
 	return defaultValue
 }
 
-// getEnvFirst returns the first non-empty env value from the provided keys.
 func getEnvFirst(keys []string, defaultValue string) string {
 	for _, key := range keys {
 		if value := os.Getenv(key); value != "" {

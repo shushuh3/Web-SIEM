@@ -3,42 +3,44 @@ package main
 import (
 	"fmt"
 	"log"
-	"net/http"
 
-	"github.com/Narotan/Web-SIEM/internal/api"
-	"github.com/Narotan/Web-SIEM/internal/config"
+	"github.com/Narotan/Web-SIEM/Web/backend/internal/config"
+	"github.com/Narotan/Web-SIEM/Web/backend/internal/repository"
+	"github.com/Narotan/Web-SIEM/Web/backend/internal/service"
+	transportHttp "github.com/Narotan/Web-SIEM/Web/backend/internal/transport/http"
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
 	cfg := config.GetConfig()
-	log.Printf("Starting SIEM-Web Backend for user: %s", cfg.WebUser)
 
-	router := gin.Default()
+	repo := repository.NewNosqlRepository(cfg.DBAddr)
 
-	// Setup API routes with authentication
-	api.SetupRouter(router)
+	svc := service.NewSiemService(repo, cfg.DBName)
 
-	// Serve frontend static files (relative to Web/backend)
-	frontendDir := "../frontend"
-	router.Static("/css", frontendDir+"/css")
-	router.Static("/js", frontendDir+"/js")
-	router.StaticFile("/", frontendDir+"/index.html")
-	router.StaticFile("/index.html", frontendDir+"/index.html")
-	router.StaticFile("/login.html", frontendDir+"/login.html")
-	router.StaticFile("/events.html", frontendDir+"/events.html")
+	handler := transportHttp.NewHandler(svc)
 
-	// Redirect all other routes to index.html (SPA fallback)
-	router.NoRoute(func(c *gin.Context) {
-		c.File(frontendDir + "/index.html")
+	r := gin.Default()
+
+	transportHttp.SetupRouter(r, handler, cfg.WebUser, cfg.WebPass)
+
+	r.Static("/css", "../frontend/css")
+	r.Static("/js", "../frontend/js")
+
+	r.StaticFile("/", "../frontend/index.html")
+	r.StaticFile("/index.html", "../frontend/index.html")
+	r.StaticFile("/login.html", "../frontend/login.html")
+	r.StaticFile("/events.html", "../frontend/events.html")
+
+	r.NoRoute(func(c *gin.Context) {
+		c.File("../frontend/index.html")
 	})
 
-	addr := fmt.Sprintf(":%s", cfg.ServerPort)
-	log.Printf("Web-server is running on http://localhost%s", addr)
-	log.Printf("Frontend served from ./Web/frontend/")
-	log.Printf("Login credentials: %s / %s", cfg.WebUser, cfg.WebPass)
+	log.Printf("Сервер запущен на http://localhost:%s", cfg.ServerPort)
+	log.Printf("Frontend находится в ../frontend/")
+	log.Printf("Логин: %s, Пароль: %s", cfg.WebUser, cfg.WebPass)
 
-	if err := http.ListenAndServe(addr, router); err != nil {
-		log.Fatalf("failed to start server: %v", err)
+	if err := r.Run(fmt.Sprintf(":%s", cfg.ServerPort)); err != nil {
+		log.Fatalf("Ошибка запуска сервера: %v", err)
 	}
 }
