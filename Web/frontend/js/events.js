@@ -6,6 +6,10 @@ let totalPages = 1;
 let totalEvents = 0;
 let eventTypes = new Set();
 let isLoading = false;
+let infiniteScrollMode = true; // Always enabled
+let scrollObserver = null;
+let selectedSeverities = [];
+let selectedTypes = [];
 
 async function initEvents() {
     if (!Auth.requireAuth()) {
@@ -13,11 +17,18 @@ async function initEvents() {
     }
     
     setupEventListeners();
+    setupMultiSelectFilters();
     
-    await loadEvents();
+    // Setup infinite scroll immediately
+    const paginationContainer = document.getElementById('paginationContainer');
+    if (paginationContainer) paginationContainer.style.display = 'none';
+    setupInfiniteScroll();
+
+    await loadEventsScroll(); // Use loadEventsScroll initially
 }
 
 function setupEventListeners() {
+    // Поиск с debounce
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
         let debounceTimer;
@@ -30,22 +41,19 @@ function setupEventListeners() {
         });
     }
     
-    const severityFilter = document.getElementById('severityFilter');
-    if (severityFilter) {
-        severityFilter.addEventListener('change', () => {
+    // Regex toggle
+    const regexToggle = document.getElementById('regexToggle');
+    if (regexToggle) {
+        regexToggle.addEventListener('change', () => {
             currentPage = 1;
-            filterEvents();
+            allEvents = []; // Clear for new search
+            const tbody = document.getElementById('eventsBody');
+            if (tbody) tbody.innerHTML = '';
+            loadEventsScroll();
         });
     }
-    
-    const typeFilter = document.getElementById('typeFilter');
-    if (typeFilter) {
-        typeFilter.addEventListener('change', () => {
-            currentPage = 1;
-            filterEvents();
-        });
-    }
-    
+
+    // Export buttons
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
     
@@ -67,6 +75,19 @@ function setupEventListeners() {
         });
     }
     
+    // Export buttons
+    const exportJSON = document.getElementById('exportJSON');
+    const exportCSV = document.getElementById('exportCSV');
+    
+    if (exportJSON) {
+        exportJSON.addEventListener('click', () => exportEvents('json'));
+    }
+    
+    if (exportCSV) {
+        exportCSV.addEventListener('click', () => exportEvents('csv'));
+    }
+    
+    // Modal
     const closeModal = document.getElementById('closeModal');
     const modalOverlay = document.getElementById('eventModal');
     
@@ -87,6 +108,117 @@ function setupEventListeners() {
             closeEventModal();
         }
     });
+}
+
+function setupMultiSelectFilters() {
+    // Severity filter
+    const severityBtn = document.getElementById('severityBtn');
+    const severityDropdown = document.getElementById('severityDropdown');
+    const severityCheckboxes = document.querySelectorAll('.severity-checkbox');
+    
+    if (severityBtn && severityDropdown) {
+        severityBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            severityDropdown.classList.toggle('active');
+            severityBtn.classList.toggle('active');
+            
+            // Close type dropdown
+            const typeDropdown = document.getElementById('typeDropdown');
+            const typeBtn = document.getElementById('typeBtn');
+            if (typeDropdown) typeDropdown.classList.remove('active');
+            if (typeBtn) typeBtn.classList.remove('active');
+        });
+        
+        severityCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                updateSelectedFilters();
+                currentPage = 1;
+                filterEvents();
+            });
+        });
+    }
+    
+    // Type filter
+    const typeBtn = document.getElementById('typeBtn');
+    const typeDropdown = document.getElementById('typeDropdown');
+    
+    if (typeBtn && typeDropdown) {
+        typeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            typeDropdown.classList.toggle('active');
+            typeBtn.classList.toggle('active');
+            
+            // Close severity dropdown
+            const severityDropdown = document.getElementById('severityDropdown');
+            const severityBtn = document.getElementById('severityBtn');
+            if (severityDropdown) severityDropdown.classList.remove('active');
+            if (severityBtn) severityBtn.classList.remove('active');
+        });
+    }
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.multi-select-container')) {
+            document.querySelectorAll('.multi-select-dropdown').forEach(dropdown => {
+                dropdown.classList.remove('active');
+            });
+            document.querySelectorAll('.multi-select-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+        }
+    });
+}
+
+function updateSelectedFilters() {
+    // Update severity filters
+    selectedSeverities = Array.from(document.querySelectorAll('.severity-checkbox:checked'))
+        .map(cb => cb.value);
+    
+    // Update type filters
+    selectedTypes = Array.from(document.querySelectorAll('.type-checkbox:checked'))
+        .map(cb => cb.value);
+    
+    // Update button text
+    const severityBtn = document.getElementById('severityBtn');
+    if (severityBtn) {
+        const span = severityBtn.querySelector('span');
+        if (selectedSeverities.length > 0) {
+            span.textContent = `Severity (${selectedSeverities.length})`;
+        } else {
+            span.textContent = 'Severity';
+        }
+    }
+    
+    const typeBtn = document.getElementById('typeBtn');
+    if (typeBtn) {
+        const span = typeBtn.querySelector('span');
+        if (selectedTypes.length > 0) {
+            span.textContent = `Тип (${selectedTypes.length})`;
+        } else {
+            span.textContent = 'Тип события';
+        }
+    }
+}
+
+function setupInfiniteScroll() {
+    const scrollLoader = document.getElementById('scrollLoader');
+    
+    if (!scrollLoader) return;
+    
+    scrollObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && !isLoading && currentPage < totalPages) {
+                currentPage++;
+                loadEventsScroll();
+            }
+        });
+    }, {
+        root: null,
+        rootMargin: '100px',
+        threshold: 0.1
+    });
+    
+    scrollObserver.observe(scrollLoader);
 }
 
 async function loadEvents() {
@@ -114,7 +246,7 @@ async function loadEvents() {
             });
             
             populateTypeFilter();
-            renderEvents();
+            filterEvents();
             updateEventsCount();
             updatePagination();
         } else {
@@ -128,54 +260,127 @@ async function loadEvents() {
     }
 }
 
-function populateTypeFilter() {
-    const typeFilter = document.getElementById('typeFilter');
-    if (!typeFilter) return;
+async function loadEventsScroll() {
+    if (isLoading) return;
+    isLoading = true;
     
-    const firstOption = typeFilter.options[0];
-    typeFilter.innerHTML = '';
-    typeFilter.appendChild(firstOption);
+    const scrollLoader = document.getElementById('scrollLoader');
+    if (scrollLoader) {
+        scrollLoader.style.display = 'flex';
+    }
+    
+    try {
+        const response = await API.getEvents(currentPage, pageSize);
+        
+        if (response.status === 'success' && response.data) {
+            allEvents = allEvents.concat(response.data);
+            totalPages = response.totalPages || 1;
+            totalEvents = response.total || response.count;
+            
+            response.data.forEach(event => {
+                if (event.event_type) {
+                    eventTypes.add(event.event_type);
+                }
+            });
+            
+            populateTypeFilter();
+            filterEvents();
+            updateEventsCount();
+        }
+    } catch (error) {
+        console.error('Failed to load events:', error);
+        showError();
+    } finally {
+        isLoading = false;
+        if (scrollLoader) {
+            scrollLoader.style.display = currentPage < totalPages ? 'flex' : 'none';
+        }
+    }
+}
+
+function populateTypeFilter() {
+    const typeDropdown = document.getElementById('typeDropdown');
+    if (!typeDropdown) return;
+    
+    // Keep existing checkboxes state
+    const checkedValues = Array.from(document.querySelectorAll('.type-checkbox:checked'))
+        .map(cb => cb.value);
+    
+    typeDropdown.innerHTML = '';
     
     Array.from(eventTypes).sort().forEach(type => {
-        const option = document.createElement('option');
-        option.value = type;
-        option.textContent = type;
-        typeFilter.appendChild(option);
+        const label = document.createElement('label');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'type-checkbox';
+        checkbox.value = type;
+        checkbox.checked = checkedValues.includes(type);
+        
+        checkbox.addEventListener('change', () => {
+            updateSelectedFilters();
+            currentPage = 1;
+            filterEvents();
+        });
+        
+        label.appendChild(checkbox);
+        label.appendChild(document.createTextNode(type));
+        typeDropdown.appendChild(label);
     });
+    
+    updateSelectedFilters();
 }
 
 function filterEvents() {
     const searchInput = document.getElementById('searchInput');
-    const severityFilter = document.getElementById('severityFilter');
-    const typeFilter = document.getElementById('typeFilter');
+    const regexToggle = document.getElementById('regexToggle');
     
-    const searchTerm = (searchInput?.value || '').toLowerCase();
-    const severityValue = severityFilter?.value || '';
-    const typeValue = typeFilter?.value || '';
+    const searchTerm = searchInput?.value || '';
+    const useRegex = regexToggle?.checked || false;
     
-    if (searchTerm || severityValue || typeValue) {
-        filteredEvents = allEvents.filter(event => {
-            if (searchTerm) {
-                const message = (event.message || '').toLowerCase();
-                const rawLog = (event.raw_log || '').toLowerCase();
-                if (!message.includes(searchTerm) && !rawLog.includes(searchTerm)) {
+    let searchRegex = null;
+    if (searchTerm && useRegex) {
+        try {
+            searchRegex = new RegExp(searchTerm, 'i');
+        } catch (e) {
+            console.error('Invalid regex:', e);
+            searchRegex = null;
+        }
+    }
+    
+    filteredEvents = allEvents.filter(event => {
+        // Search filter
+        if (searchTerm) {
+            const message = (event.message || '').toLowerCase();
+            const rawLog = (event.raw_log || '').toLowerCase();
+            
+            if (searchRegex) {
+                if (!searchRegex.test(message) && !searchRegex.test(rawLog)) {
+                    return false;
+                }
+            } else {
+                const searchLower = searchTerm.toLowerCase();
+                if (!message.includes(searchLower) && !rawLog.includes(searchLower)) {
                     return false;
                 }
             }
-            
-            if (severityValue && event.severity !== severityValue) {
+        }
+        
+        // Severity filter
+        if (selectedSeverities.length > 0) {
+            if (!selectedSeverities.includes(event.severity)) {
                 return false;
             }
-            
-            if (typeValue && event.event_type !== typeValue) {
+        }
+        
+        // Type filter
+        if (selectedTypes.length > 0) {
+            if (!selectedTypes.includes(event.event_type)) {
                 return false;
             }
-            
-            return true;
-        });
-    } else {
-        filteredEvents = allEvents;
-    }
+        }
+        
+        return true;
+    });
     
     renderEvents();
 }
@@ -241,6 +446,54 @@ function updateEventsCount() {
     const eventsCount = document.getElementById('eventsCount');
     if (eventsCount) {
         eventsCount.textContent = `Всего: ${totalEvents}`;
+    }
+}
+
+async function exportEvents(format) {
+    try {
+        const credentials = Auth.getCredentials();
+        if (!credentials) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        const authHeader = 'Basic ' + btoa(credentials.username + ':' + credentials.password);
+        
+        const response = await fetch(`${API.baseUrl}/events/export?format=${format}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': authHeader
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Server error');
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = `events_export.${format}`;
+        if (contentDisposition) {
+            const matches = /filename=([^;]+)/.exec(contentDisposition);
+            if (matches && matches[1]) {
+                filename = matches[1];
+            }
+        }
+        
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    } catch (error) {
+        console.error('Export failed:', error);
+        alert('Ошибка экспорта данных: ' + error.message);
     }
 }
 

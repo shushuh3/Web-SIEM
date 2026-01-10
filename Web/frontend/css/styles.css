@@ -808,10 +808,17 @@ body {
 .search-box {
     flex: 1;
     min-width: 300px;
-    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
-.search-box svg {
+.search-input-wrapper {
+    position: relative;
+    flex: 1;
+}
+
+.search-input-wrapper svg {
     position: absolute;
     left: 14px;
     top: 50%;
@@ -822,7 +829,7 @@ body {
     pointer-events: none;
 }
 
-.search-box input {
+.search-input-wrapper input {
     width: 100%;
     padding: 12px 14px 12px 44px;
     background-color: var(--bg-card);
@@ -834,12 +841,12 @@ body {
     transition: border-color var(--transition-fast);
 }
 
-.search-box input:focus {
+.search-input-wrapper input:focus {
     outline: none;
     border-color: var(--accent-info);
 }
 
-.search-box input::placeholder {
+.search-input-wrapper input::placeholder {
     color: var(--text-muted);
 }
 
@@ -1145,4 +1152,200 @@ body {
         justify-content: center;
         padding: 12px;
     }
+}
+
+/* Export Buttons */
+.export-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.export-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--input-radius);
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.export-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.export-btn:hover {
+    background-color: var(--bg-hover);
+    color: var(--accent-info);
+    border-color: var(--accent-info);
+    box-shadow: var(--shadow-glow);
+}
+
+.export-btn:active {
+    transform: translateY(1px);
+}
+
+/* Regex Checkbox */
+.regex-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.regex-checkbox input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.regex-checkbox span {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.regex-checkbox input[type="checkbox"]:checked + span {
+    color: var(--accent-info);
+    font-weight: 500;
+}
+
+/* Multi-Select Filter */
+.multi-select-container {
+    position: relative;
+}
+
+.multi-select-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 160px;
+    padding: 8px 14px;
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--input-radius);
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.multi-select-btn svg {
+    width: 16px;
+    height: 16px;
+    transition: transform var(--transition-fast);
+}
+
+.multi-select-btn:hover {
+    border-color: var(--accent-info);
+    color: var(--text-primary);
+}
+
+.multi-select-btn.active {
+    border-color: var(--accent-info);
+    color: var(--accent-info);
+}
+
+.multi-select-btn.active svg {
+    transform: rotate(180deg);
+}
+
+.multi-select-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    min-width: 100%;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--input-radius);
+    box-shadow: var(--shadow-card);
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.multi-select-dropdown.active {
+    display: flex;
+}
+
+.multi-select-dropdown label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+    user-select: none;
+}
+
+.multi-select-dropdown label:hover {
+    background-color: var(--bg-hover);
+}
+
+.multi-select-dropdown input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* View Mode Toggle */
+.view-mode-toggle {
+    display: flex;
+    align-items: center;
+}
+
+.toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.toggle-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.toggle-label input[type="checkbox"]:checked ~ span {
+    color: var(--accent-info);
+    font-weight: 500;
+}
+
+/* Scroll Loader */
+.scroll-loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 20px;
+    color: var(--text-muted);
+}
+
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color);
+    border-top-color: var(--accent-info);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }

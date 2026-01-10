@@ -61,35 +61,74 @@
             <h1>Реестр событий</h1>
             <div class="header-info">
                 <span class="events-count" id="eventsCount">Всего: --</span>
+                <div class="export-buttons">
+                    <button class="export-btn" id="exportJSON" title="Экспорт в JSON">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        JSON
+                    </button>
+                    <button class="export-btn" id="exportCSV" title="Экспорт в CSV">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        CSV
+                    </button>
+                </div>
             </div>
         </header>
 
         <div class="events-header">
             <div class="search-box">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <circle cx="11" cy="11" r="8"/>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                </svg>
-                <input type="text" id="searchInput" placeholder="Поиск по сообщению или логу...">
+                <div class="search-input-wrapper">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <input type="text" id="searchInput" placeholder="Поиск по сообщению или логу...">
+                </div>
+                <label class="regex-checkbox">
+                    <input type="checkbox" id="regexToggle">
+                    <span>Regex</span>
+                </label>
             </div>
             
             <div class="filter-group">
-                <select class="filter-select" id="severityFilter">
-                    <option value="">Все Severity</option>
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="critical">Critical</option>
-                </select>
+                <div class="multi-select-container" id="severityFilterContainer">
+                    <button class="multi-select-btn" id="severityBtn">
+                        <span>Severity</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </button>
+                    <div class="multi-select-dropdown" id="severityDropdown">
+                        <label><input type="checkbox" value="low" class="severity-checkbox"> Low</label>
+                        <label><input type="checkbox" value="medium" class="severity-checkbox"> Medium</label>
+                        <label><input type="checkbox" value="high" class="severity-checkbox"> High</label>
+                        <label><input type="checkbox" value="critical" class="severity-checkbox"> Critical</label>
+                    </div>
+                </div>
                 
-                <select class="filter-select" id="typeFilter">
-                    <option value="">Все типы</option>
-                </select>
+                <div class="multi-select-container" id="typeFilterContainer">
+                    <button class="multi-select-btn" id="typeBtn">
+                        <span>Тип события</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </button>
+                    <div class="multi-select-dropdown" id="typeDropdown">
+                        <!-- Динамически заполняется -->
+                    </div>
+                </div>
             </div>
         </div>
 
         <div class="events-card">
-            <div class="events-table-container">
+            <div class="events-table-container" id="tableContainer">
                 <table class="events-table">
                     <thead>
                         <tr>
@@ -105,9 +144,13 @@
                         <tr><td colspan="6" class="loading">Загрузка...</td></tr>
                     </tbody>
                 </table>
+                <div id="scrollLoader" class="scroll-loader" style="display: none;">
+                    <div class="spinner"></div>
+                    <span>Загрузка...</span>
+                </div>
             </div>
             
-            <div class="pagination">
+            <div class="pagination" id="paginationContainer">
                 <div class="pagination-info" id="paginationInfo">
                     Показано 0-0 из 0
                 </div>

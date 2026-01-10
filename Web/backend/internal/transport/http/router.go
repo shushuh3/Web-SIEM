@@ -16,6 +16,7 @@ func SetupRouter(r *gin.Engine, handler *Handler, webUser, webPass string) {
 		protected.Use(middleware.BasicAuth(webUser, webPass))
 		{
 			protected.GET("/events", handler.GetEvents)
+			protected.GET("/events/export", handler.ExportEvents)
 			protected.GET("/stats", handler.GetStats)
 		}
 	}

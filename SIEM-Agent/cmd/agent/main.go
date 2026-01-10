@@ -135,8 +135,8 @@ func main() {
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	log.Printf("SIEM Agent started with agent_id=%s", cfg.Logging.AgentID)
-	log.Printf("Sending batches to %s:%d every %d seconds or %d events",
-		cfg.Server.Host, cfg.Server.Port, cfg.Logging.SendInterval, cfg.Logging.BatchSize)
+	log.Printf("Sending batches to %s:%d every 30 seconds or %d events",
+		cfg.Server.Host, cfg.Server.Port, cfg.Logging.BatchSize)
 
 	<-sigChan
 	log.Println("Shutting down...")

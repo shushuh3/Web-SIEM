@@ -12,6 +12,7 @@ import (
 type Service interface {
 	GetEvents(page, limit int) (*domain.EventsPage, error)
 	GetStats() (*domain.DashboardStats, error)
+	ExportAllEvents() ([]map[string]any, error)
 }
 
 type siemService struct {
@@ -164,4 +165,19 @@ func (s *siemService) GetStats() (*domain.DashboardStats, error) {
 	s.statsCacheMutex.Unlock()
 
 	return &stats, nil
+}
+
+func (s *siemService) ExportAllEvents() ([]map[string]any, error) {
+	data, err := s.repo.FindAll(s.dbName, map[string]any{})
+	if err != nil {
+		return nil, err
+	}
+
+	sort.Slice(data, func(i, j int) bool {
+		t1, _ := data[i]["timestamp"].(string)
+		t2, _ := data[j]["timestamp"].(string)
+		return t1 > t2
+	})
+
+	return data, nil
 }
