@@ -14,25 +14,16 @@
     width: 100%;
     max-width: 400px;
     background-color: var(--bg-card);
-    backdrop-filter: blur(12px);
     border: 1px solid var(--border-color);
     border-radius: var(--card-radius);
     padding: 40px;
-    box-shadow: var(--shadow-card), 0 0 20px rgba(6, 182, 212, 0.05);
+    box-shadow: var(--shadow-card);
     animation: fadeIn 0.5s ease-out;
     z-index: 1;
     position: relative;
 }
 
-.login-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, var(--accent-info), transparent);
-}
+
 
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
@@ -49,13 +40,11 @@
     height: 64px;
     margin: 0 auto 16px;
     color: var(--accent-info);
-    background: rgba(6, 182, 212, 0.1);
-    border: 1px solid rgba(6, 182, 212, 0.2);
+    border: 1px solid var(--border-color);
     border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);
 }
 
 .logo-icon svg {
@@ -121,7 +110,6 @@
 .input-wrapper input:focus {
     outline: none;
     border-color: var(--accent-info);
-    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);
 }
 
 .input-wrapper input:focus + .input-icon,
