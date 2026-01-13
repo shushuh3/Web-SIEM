@@ -24,20 +24,20 @@ func main() {
 
 	transportHttp.SetupRouter(r, handler, cfg.WebUser, cfg.WebPass)
 
-	r.Static("/css", "../frontend/css")
-	r.Static("/js", "../frontend/js")
+	r.Static("/css", "./frontend/css")
+	r.Static("/js", "./frontend/js")
 
-	r.StaticFile("/", "../frontend/index.html")
-	r.StaticFile("/index.html", "../frontend/index.html")
-	r.StaticFile("/login.html", "../frontend/login.html")
-	r.StaticFile("/events.html", "../frontend/events.html")
+	r.StaticFile("/", "./frontend/index.html")
+	r.StaticFile("/index.html", "./frontend/index.html")
+	r.StaticFile("/login.html", "./frontend/login.html")
+	r.StaticFile("/events.html", "./frontend/events.html")
 
 	r.NoRoute(func(c *gin.Context) {
-		c.File("../frontend/index.html")
+		c.File("./frontend/index.html")
 	})
 
 	log.Printf("Сервер запущен на http://localhost:%s", cfg.ServerPort)
-	log.Printf("Frontend находится в ../frontend/")
+	log.Printf("Frontend находится в ./frontend/")
 	log.Printf("Логин: %s, Пароль: %s", cfg.WebUser, cfg.WebPass)
 
 	if err := r.Run(fmt.Sprintf(":%s", cfg.ServerPort)); err != nil {

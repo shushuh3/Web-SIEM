@@ -129,7 +129,6 @@ func (h *Handler) exportCSV(c *gin.Context, events []map[string]any, timestamp s
 	writer := csv.NewWriter(c.Writer)
 	defer writer.Flush()
 
-	// Заголовки CSV
 	headers := []string{"timestamp", "agent_id", "event_type", "severity", "user", "process", "message", "raw_log"}
 	if err := writer.Write(headers); err != nil {
 		return

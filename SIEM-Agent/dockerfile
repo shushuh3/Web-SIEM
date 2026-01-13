@@ -1,0 +1,28 @@
+FROM golang:1.23-alpine AS builder
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /siem-agent ./cmd/agent/main.go
+
+FROM alpine:3.19
+
+RUN adduser -D agentuser
+
+WORKDIR /home/agentuser
+
+COPY --from=builder /siem-agent .
+COPY --from=builder /app/configs/config.yaml ./configs/
+
+RUN mkdir -p /tmp/siem-agent-logs /tmp/siem-agent-buffer /tmp/test-siem-logs && \
+    chown -R agentuser:agentuser /tmp/siem-agent-logs /tmp/siem-agent-buffer /tmp/test-siem-logs
+
+USER agentuser
+
+ENV CONFIG_PATH=/home/agentuser/configs/config.yaml
+
+CMD ["./siem-agent"]

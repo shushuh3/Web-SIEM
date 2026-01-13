@@ -1,0 +1,95 @@
+services:
+  # NoSQL Database
+  nosql-db:
+    build:
+      context: ./NoSQLdb
+      dockerfile: dockerfile
+    container_name: nosql-db
+    ports:
+      - "5140:5140"
+    volumes:
+      - nosql-data:/home/dbuser/data
+    networks:
+      - siem-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "5140"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Web Backend
+  web-backend:
+    build:
+      context: ./Web
+      dockerfile: backend/dockerfile
+    container_name: web-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_SOCKET=nosql-db:5140
+      - DB_NAME=siem_events
+      - SERVER_PORT=8080
+      - WEB_USER=admin
+      - WEB_PASSWORD=admin
+    depends_on:
+      nosql-db:
+        condition: service_healthy
+    networks:
+      - siem-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # SIEM Agent
+  siem-agent:
+    build:
+      context: ./SIEM-Agent
+      dockerfile: dockerfile
+    container_name: siem-agent
+    volumes:
+      - ./SIEM-Agent/configs/config.docker.yaml:/home/agentuser/configs/config.yaml:ro
+      - agent-buffer:/tmp/siem-agent-buffer
+      - agent-logs:/tmp/siem-agent-logs
+      - /var/log:/var/log:ro  # Монтируем системные логи для чтения
+    environment:
+      - CONFIG_PATH=/home/agentuser/configs/config.yaml
+    depends_on:
+      nosql-db:
+        condition: service_healthy
+    networks:
+      - siem-network
+    restart: unless-stopped
+
+  # Nginx Reverse Proxy
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: dockerfile
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+    volumes:
+      - ./Web/frontend:/usr/share/nginx/html:ro
+    depends_on:
+      - web-backend
+    networks:
+      - siem-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+networks:
+  siem-network:
+    driver: bridge
+
+volumes:
+  nosql-data:
+  agent-buffer:
+  agent-logs:
