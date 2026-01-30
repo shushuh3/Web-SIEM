@@ -23,7 +23,7 @@ func init() {
 	}
 
 	cfg = &Config{
-		DBAddr:     getEnvFirst([]string{"DB_SOCKET"}, "localhost:9090"),
+		DBAddr:     getEnvFirst([]string{"DB_SOCKET"}, "localhost:5140"),
 		DBName:     getEnvFirst([]string{"DB_NAME"}, "siem_events"),
 		ServerPort: getEnvFirst([]string{"SERVER_PORT"}, "8080"),
 		WebUser:    getEnvFirst([]string{"WEB_USER"}, "admin"),

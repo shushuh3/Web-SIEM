@@ -1,5 +1,4 @@
 services:
-  # NoSQL Database
   nosql-db:
     build:
       context: ./NoSQLdb
@@ -18,7 +17,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Web Backend
   web-backend:
     build:
       context: ./Web
@@ -27,11 +25,11 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - DB_SOCKET=nosql-db:5140
-      - DB_NAME=siem_events
-      - SERVER_PORT=8080
-      - WEB_USER=admin
-      - WEB_PASSWORD=admin
+      - DB_SOCKET=${DB_SOCKET:-nosql-db:5140}
+      - DB_NAME=${DB_NAME:-siem_events}
+      - SERVER_PORT=${SERVER_PORT:-8080}
+      - WEB_USER=${WEB_USER:-admin}
+      - WEB_PASSWORD=${WEB_PASSWORD:-admin}
     depends_on:
       nosql-db:
         condition: service_healthy
@@ -39,12 +37,11 @@ services:
       - siem-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]
+      test: ["CMD-SHELL", "wget -q --spider --user=$$WEB_USER --password=$$WEB_PASSWORD http://localhost:8080/api/health"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # SIEM Agent
   siem-agent:
     build:
       context: ./SIEM-Agent
@@ -54,7 +51,7 @@ services:
       - ./SIEM-Agent/configs/config.docker.yaml:/home/agentuser/configs/config.yaml:ro
       - agent-buffer:/tmp/siem-agent-buffer
       - agent-logs:/tmp/siem-agent-logs
-      - /var/log:/var/log:ro  # Монтируем системные логи для чтения
+      - /var/log:/var/log:ro  
     environment:
       - CONFIG_PATH=/home/agentuser/configs/config.yaml
     depends_on:
@@ -64,7 +61,6 @@ services:
       - siem-network
     restart: unless-stopped
 
-  # Nginx Reverse Proxy
   nginx:
     build:
       context: ./nginx
